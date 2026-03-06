@@ -11,4 +11,10 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
-      - nsky_data:/var/lib/postgresql/data
+      - nsky-data:/var/lib/postgresql
+
+networks:
+  nsky:
+
+volumes:
+  nsky-data:
