@@ -12,6 +12,7 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - nsky-data:/var/lib/postgresql
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
 
 networks:
   nsky:
