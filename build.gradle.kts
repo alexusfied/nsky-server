@@ -25,11 +25,11 @@ repositories {
 }
 
 dependencies {
-	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+	implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-webclient")
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
-	implementation("org.postgresql:postgresql")
+	implementation("org.postgresql:r2dbc-postgresql")
 	compileOnly("org.projectlombok:lombok")
 	annotationProcessor("org.projectlombok:lombok")
 	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
