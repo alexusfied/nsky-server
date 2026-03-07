@@ -17,4 +17,8 @@ public class ChatService {
 
         return chatRepository.save(chat);
     }
+
+    public Mono<Void> deleteChat(Long id) {
+        return chatRepository.deleteById(id);
+    }
 }
