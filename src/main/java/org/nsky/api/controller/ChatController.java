@@ -2,6 +2,7 @@ package org.nsky.api.controller;
 
 import lombok.AllArgsConstructor;
 import org.nsky.api.controller.dto.CreateChatRequestDTO;
+import org.nsky.api.controller.dto.CreateChatResponseDTO;
 import org.nsky.api.service.ChatService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +19,14 @@ public class ChatController {
     private final ChatService chatService;
 
     @PostMapping("/create")
-    public Mono<ResponseEntity<Void>> createChat(@RequestBody CreateChatRequestDTO request) {
+    public Mono<ResponseEntity<CreateChatResponseDTO>> createChat(@RequestBody CreateChatRequestDTO request) {
         return chatService
             .createChat(request.name())
-            .then(Mono.just(ResponseEntity.status(HttpStatus.CREATED).build()));
+            .map(savedChat -> ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(new CreateChatResponseDTO(savedChat.getId()))
+            );
+
+
     }
 }
