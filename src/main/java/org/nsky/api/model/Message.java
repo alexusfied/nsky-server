@@ -7,8 +7,7 @@ import org.springframework.data.annotation.Id;
 public class Message {
     @Id
     private Long id;
-
-    private Chat chat;
+    private Long chatId;
     private String author;
     private String content;
 }
