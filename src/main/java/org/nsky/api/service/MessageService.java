@@ -33,7 +33,7 @@ public class MessageService {
             List.of(Map.of("role", "user", "content", prompt))
         ));
 
-        return messageRepository.save(userPrompt)
+        Flux<String> llmResponse = messageRepository.save(userPrompt)
             .thenMany(
                 client
                     .post()
@@ -43,6 +43,22 @@ public class MessageService {
                     .retrieve()
                     .bodyToFlux(JsonNode.class)
                     .map(node -> node.get("message").get("content").asString())
-            );
+            )
+            .cache();
+
+        Mono<Void> saveLlmResponse = llmResponse
+            .reduce(new StringBuilder(), StringBuilder::append)
+            .map(StringBuilder::toString)
+            .flatMap(result -> {
+                Message llmResonse = new Message();
+                llmResonse.setChatId(chatId);
+                llmResonse.setAuthor("model");
+                llmResonse.setContent(result);
+
+                return messageRepository.save(llmResonse);
+            })
+            .then();
+
+        return llmResponse.concatWith(saveLlmResponse.then(Mono.empty()));
     }
 }
