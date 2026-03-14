@@ -8,7 +8,7 @@ CREATE TABLE "message" (
     "id" serial,
     "chat_id" bigint not null,
     "author" varchar(255),
-    "content" varchar(255),
+    "content" text,
     primary key("id")
 );
 
