@@ -3,10 +3,12 @@ package org.nsky.api.controller;
 import lombok.AllArgsConstructor;
 import org.nsky.api.controller.dto.CreateChatRequestDTO;
 import org.nsky.api.controller.dto.CreateChatResponseDTO;
+import org.nsky.api.controller.dto.GetChatResponseDTO;
 import org.nsky.api.service.ChatService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -14,6 +16,11 @@ import reactor.core.publisher.Mono;
 @AllArgsConstructor
 public class ChatController {
     private final ChatService chatService;
+
+    @GetMapping("/all")
+    public Flux<GetChatResponseDTO> findAll() {
+        return chatService.findAllChats();
+    }
 
     @PostMapping("/create")
     public Mono<ResponseEntity<CreateChatResponseDTO>> createChat(@RequestBody CreateChatRequestDTO request) {
