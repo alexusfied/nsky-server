@@ -18,18 +18,25 @@ import java.util.Map;
 @AllArgsConstructor
 public class LlmService {
     private final MessageRepository messageRepository;
+    private final ChatService chatService;
     private final WebClient client = WebClient.create("http://localhost:11434");
 
     public Flux<String> stream(String prompt, Long chatId) {
-        Message userPrompt = new Message();
-        userPrompt.setAuthor("user");
-        userPrompt.setContent(prompt);
-        userPrompt.setChatId(chatId);
-
         Mono<OllamaStreamRequestDTO> request = Mono.just(new OllamaStreamRequestDTO(
             "mistral",
             List.of(Map.of("role", "user", "content", prompt))
         ));
+
+        return chatId == null
+            ? chatService.createChat(prompt).flatMapMany(chat -> saveUserPromptAndStream(request, chat.getId(), prompt))
+            : saveUserPromptAndStream(request, chatId, prompt);
+    }
+
+    private Flux<String> saveUserPromptAndStream(Mono<OllamaStreamRequestDTO> request, Long chatId, String prompt) {
+        Message userPrompt = new Message();
+        userPrompt.setAuthor("user");
+        userPrompt.setContent(prompt);
+        userPrompt.setChatId(chatId);
 
         Flux<String> llmResponse = messageRepository.save(userPrompt)
             .thenMany(
