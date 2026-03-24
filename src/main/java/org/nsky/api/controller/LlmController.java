@@ -12,10 +12,9 @@ import reactor.core.publisher.Flux;
 public class LlmController {
     private final LlmService llmService;
 
-    @PostMapping("/{chatId}/stream")
+    @PostMapping("/stream")
     public Flux<String> stream(
-        @PathVariable Long chatId,
         @RequestBody StreamRequestDTO request) {
-        return llmService.stream(request.prompt(), chatId);
+        return llmService.stream(request.prompt(), request.chatId());
     }
 }
