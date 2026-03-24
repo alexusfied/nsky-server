@@ -1,7 +1,6 @@
 package org.nsky.api.service;
 
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.nsky.api.model.Message;
 import org.nsky.api.repository.MessageRepository;
 import org.nsky.api.service.dto.OllamaStreamRequestDTO;
@@ -15,10 +14,9 @@ import tools.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j
 @Service
 @AllArgsConstructor
-public class MessageService {
+public class LlmService {
     private final MessageRepository messageRepository;
     private final WebClient client = WebClient.create("http://localhost:11434");
 

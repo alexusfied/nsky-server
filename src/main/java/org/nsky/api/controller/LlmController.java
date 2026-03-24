@@ -2,20 +2,20 @@ package org.nsky.api.controller;
 
 import lombok.AllArgsConstructor;
 import org.nsky.api.controller.dto.StreamRequestDTO;
-import org.nsky.api.service.MessageService;
+import org.nsky.api.service.LlmService;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 @RestController
-@RequestMapping("/api/message")
+@RequestMapping("/api/llm")
 @AllArgsConstructor
-public class MessageController {
-    private final MessageService messageService;
+public class LlmController {
+    private final LlmService llmService;
 
     @PostMapping("/{chatId}/stream")
     public Flux<String> stream(
         @PathVariable Long chatId,
         @RequestBody StreamRequestDTO request) {
-        return messageService.stream(request.prompt(), chatId);
+        return llmService.stream(request.prompt(), chatId);
     }
 }
