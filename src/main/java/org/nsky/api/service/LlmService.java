@@ -49,6 +49,7 @@ public class LlmService {
                     .bodyToFlux(JsonNode.class)
                     .map(node -> node.get("message").get("content").asString())
             )
+            .startWith("chatId: " + chatId.toString())
             .cache();
 
         Mono<Void> saveLlmResponse = llmResponse
