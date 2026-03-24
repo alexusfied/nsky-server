@@ -3,6 +3,7 @@ package org.nsky.api.controller;
 import lombok.AllArgsConstructor;
 import org.nsky.api.controller.dto.CreateChatRequestDTO;
 import org.nsky.api.controller.dto.CreateChatResponseDTO;
+import org.nsky.api.controller.dto.GetChatMessagesResponseDTO;
 import org.nsky.api.controller.dto.GetChatResponseDTO;
 import org.nsky.api.service.ChatService;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,11 @@ public class ChatController {
     @GetMapping("/all")
     public Flux<GetChatResponseDTO> findAll() {
         return chatService.findAllChats();
+    }
+
+    @GetMapping("/{chatId}/messages")
+    public Flux<GetChatMessagesResponseDTO> findAllMessagesForChat(@PathVariable Long chatId) {
+        return chatService.findAllMessagesForChat(chatId);
     }
 
     @PostMapping("/create")
