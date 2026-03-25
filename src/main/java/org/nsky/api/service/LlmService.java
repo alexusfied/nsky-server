@@ -53,7 +53,10 @@ public class LlmService {
             .cache();
 
         Mono<Void> saveLlmResponse = llmResponse
-            .reduce(new StringBuilder(), StringBuilder::append)
+            .reduce(new StringBuilder(), (builder, chunk) -> {
+                if (!chunk.startsWith("chatId")) return builder.append(chunk);
+                return builder;
+            })
             .map(StringBuilder::toString)
             .flatMap(result -> {
                 Message llmResonse = new Message();
