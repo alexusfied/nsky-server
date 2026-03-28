@@ -20,7 +20,7 @@ public class LlmService {
     private final MessageRepository messageRepository;
     private final ChatService chatService;
     private final WebClient client = WebClient.create("http://localhost:11434");
-    private final String SYSTEM_PROMPT = "Always structure your output using the Markdown syntax";
+    private final String SYSTEM_PROMPT = "";
 
     public Flux<String> stream(String prompt, Long chatId) {
         Mono<OllamaStreamRequestDTO> request = Mono.just(new OllamaStreamRequestDTO(
