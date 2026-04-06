@@ -15,4 +15,5 @@ CREATE TABLE "message" (
 ALTER TABLE IF EXISTS "message"
     ADD CONSTRAINT "fk_message_chat"
         FOREIGN KEY("chat_id")
-            REFERENCES "chat";
+            REFERENCES "chat"
+                ON DELETE cascade;
