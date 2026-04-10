@@ -12,6 +12,6 @@ public class CorsConfig implements WebFluxConfigurer {
     public void addCorsMappings(CorsRegistry corsRegistry) {
         corsRegistry.addMapping("/**")
             .allowedOrigins("http://localhost:3000")
-            .allowedMethods("GET", "POST", "DELETE");
+            .allowedMethods("GET", "POST", "DELETE", "PATCH");
     }
 }

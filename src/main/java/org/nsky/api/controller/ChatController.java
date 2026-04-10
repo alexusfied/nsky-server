@@ -1,10 +1,7 @@
 package org.nsky.api.controller;
 
 import lombok.AllArgsConstructor;
-import org.nsky.api.controller.dto.CreateChatRequestDTO;
-import org.nsky.api.controller.dto.CreateChatResponseDTO;
-import org.nsky.api.controller.dto.GetChatMessagesResponseDTO;
-import org.nsky.api.controller.dto.GetChatResponseDTO;
+import org.nsky.api.controller.dto.*;
 import org.nsky.api.service.ChatService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,6 +39,18 @@ public class ChatController {
     public Mono<ResponseEntity<Void>> deleteChat(@PathVariable Long id) {
         return chatService
             .deleteChat(id)
+            .then(Mono.just(
+                ResponseEntity.ok().build()
+            ));
+    }
+
+    @PatchMapping("/{id}/rename")
+    public Mono<ResponseEntity<Void>> renameChat(
+        @PathVariable Long id,
+        @RequestBody RenameChatRequestDTO request
+    ) {
+        return chatService
+            .renameChat(id, request.updatedName())
             .then(Mono.just(
                 ResponseEntity.ok().build()
             ));

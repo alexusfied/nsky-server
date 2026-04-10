@@ -43,4 +43,9 @@ public class ChatService {
     public Mono<Void> deleteChat(Long id) {
         return chatRepository.deleteById(id);
     }
+
+    public Mono<Void> renameChat(Long id, String updatedName) {
+        return chatRepository.updateNameById(id, updatedName);
+
+    }
 }
