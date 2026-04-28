@@ -24,7 +24,12 @@ public class LlmService {
     private final ChatService chatService;
     private final SearchService searchService;
     private final WebClient client = WebClient.create("http://localhost:11434");
-    private final String SYSTEM_PROMPT = "When the user asks for up-to-date information or when you are unsure about facts, you MUST use the web search tool. Do not answer without searching if you are unsure about something";
+    private final String SYSTEM_PROMPT = """
+    When the user asks for up-to-date information or when you are unsure about facts, you MUST use the web search tool.
+    Do not answer without searching if you are unsure about something. Do not use the web search tool for general knowledge
+    questions or anything you are confident about. Do not directly quote the search results, but rather give an answer to
+    the users question based on the web search results.
+    """;
 
     public Flux<String> stream(String prompt, Long chatId) {
         List<Map<String, String>> messages = new ArrayList<>(List.of(
