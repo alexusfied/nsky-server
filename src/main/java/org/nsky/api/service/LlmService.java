@@ -1,6 +1,7 @@
 package org.nsky.api.service;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.nsky.api.model.Message;
 import org.nsky.api.repository.MessageRepository;
 import org.nsky.api.service.dto.OllamaStreamRequestDTO;
@@ -11,24 +12,46 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tools.jackson.databind.JsonNode;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class LlmService {
     private final MessageRepository messageRepository;
     private final ChatService chatService;
+    private final SearchService searchService;
     private final WebClient client = WebClient.create("http://localhost:11434");
-    private final String SYSTEM_PROMPT = "";
+    private final String SYSTEM_PROMPT = "When the user asks for up-to-date information or when you are unsure about facts, you MUST use the web search tool. Do not answer without searching if you are unsure about something";
 
     public Flux<String> stream(String prompt, Long chatId) {
+        List<Map<String, String>> messages = new ArrayList<>(List.of(
+            Map.of("role", "system", "content", SYSTEM_PROMPT),
+            Map.of("role", "user", "content", prompt)
+        ));
+        List<Map<String, Object>> tools = List.of(
+            Map.of("type", "function", "function", Map.of(
+                "name", "perform_web_search",
+                "description", "Perform a web search to get up-to-date and missing information",
+                "parameters", Map.of(
+                    "type", "object",
+                    "required", List.of("query"),
+                    "properties", Map.of(
+                        "query", Map.of(
+                            "type", "string",
+                            "description", "The query which is used for the web search"
+                        )
+                    )
+                )
+            ))
+        );
+
         Mono<OllamaStreamRequestDTO> request = Mono.just(new OllamaStreamRequestDTO(
             "mistral",
-            List.of(
-                Map.of("role", "system", "content", SYSTEM_PROMPT),
-                Map.of("role", "user", "content", prompt)
-            )
+            messages,
+            tools
         ));
 
         return chatId == null
@@ -51,6 +74,35 @@ public class LlmService {
                     .body(request, OllamaStreamRequestDTO.class)
                     .retrieve()
                     .bodyToFlux(JsonNode.class)
+                    .flatMap(node -> {
+                        if (node.get("message").has("tool_calls")) {
+                            log.info("Tool called: {}", node.get("message").get("tool_calls"));
+                            String query = node.get("message").get("tool_calls").get(0).get("function").get("arguments").get("query").asString();
+
+                            return searchService
+                                .performWebSearch(query)
+                                .flatMap(searchResult -> request.flatMapMany(req -> {
+                                    req.messages().add(Map.of("role", "tool", "tool_name", "perform_web_search", "content", searchResult));
+
+                                    Mono<OllamaStreamRequestDTO> updatedRequest = Mono.just(new OllamaStreamRequestDTO(
+                                        "mistral",
+                                        req.messages(),
+                                        req.tools()
+                                    ));
+
+                                    log.info("Calling llm with tool call response...");
+
+                                    return client
+                                        .post()
+                                        .uri("/api/chat")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .body(updatedRequest, OllamaStreamRequestDTO.class)
+                                        .retrieve()
+                                        .bodyToFlux(JsonNode.class);
+                                }));
+                        }
+                        return Flux.just(node);
+                    })
                     .map(node -> node.get("message").get("content").asString())
             )
             .startWith("chatId: " + chatId.toString())
