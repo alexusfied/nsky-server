@@ -5,5 +5,6 @@ import java.util.Map;
 
 public record OllamaStreamRequestDTO(
     String model,
-    List<Map<String, String>> messages
+    List<Map<String, String>> messages,
+    List<Map<String, Object>> tools
 ) {}
