@@ -9,6 +9,8 @@ import reactor.core.publisher.Flux;
 import tools.jackson.databind.JsonNode;
 
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 @Service
@@ -28,6 +30,17 @@ public class SearchService {
             .bodyValue(body)
             .retrieve()
             .bodyToFlux(JsonNode.class)
-            .map(node -> node.get("results").toString());
+            .map(node -> StreamSupport
+                .stream(node.get("results").spliterator(), false)
+                .map(obj -> String.format(
+                    "URL: %s, Title: %s, Content: %s",
+                    obj.get("url"),
+                    obj.get("title"),
+                    obj.get("content")
+                    )
+                )
+                .collect(Collectors.joining())
+
+            );
     }
 }
