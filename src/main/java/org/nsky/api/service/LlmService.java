@@ -82,33 +82,39 @@ public class LlmService {
                     .flatMap(node -> {
                         if (node.get("message").has("tool_calls")) {
                             log.info("Tool called: {}", node.get("message").get("tool_calls"));
+
+                            Flux<String> webSearchSignal = Flux.just("WEB_SEARCH_STARTED");
+
                             String query = node.get("message").get("tool_calls").get(0).get("function").get("arguments").get("query").asString();
 
-                            return searchService
-                                .performWebSearch(query)
-                                .flatMap(searchResult -> request.flatMapMany(req -> {
-                                    req.messages().add(Map.of("role", "tool", "tool_name", "perform_web_search", "content", searchResult));
+                            return Flux.concat(
+                                webSearchSignal,
+                                searchService
+                                    .performWebSearch(query)
+                                    .flatMap(searchResult -> request.flatMapMany(req -> {
+                                        req.messages().add(Map.of("role", "tool", "tool_name", "perform_web_search", "content", searchResult));
 
-                                    Mono<OllamaStreamRequestDTO> updatedRequest = Mono.just(new OllamaStreamRequestDTO(
-                                        "mistral",
-                                        req.messages(),
-                                        req.tools()
-                                    ));
+                                        Mono<OllamaStreamRequestDTO> updatedRequest = Mono.just(new OllamaStreamRequestDTO(
+                                            "mistral",
+                                            req.messages(),
+                                            req.tools()
+                                        ));
 
-                                    log.info("Calling llm with tool call response...");
+                                        log.info("Calling llm with tool call response...");
 
-                                    return client
-                                        .post()
-                                        .uri("/api/chat")
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .body(updatedRequest, OllamaStreamRequestDTO.class)
-                                        .retrieve()
-                                        .bodyToFlux(JsonNode.class);
-                                }));
+                                        return client
+                                            .post()
+                                            .uri("/api/chat")
+                                            .contentType(MediaType.APPLICATION_JSON)
+                                            .body(updatedRequest, OllamaStreamRequestDTO.class)
+                                            .retrieve()
+                                            .bodyToFlux(JsonNode.class)
+                                            .map(_node -> _node.get("message").get("content").asString());
+                                    }))
+                            );
                         }
-                        return Flux.just(node);
+                        return Flux.just(node.get("message").get("content").asString());
                     })
-                    .map(node -> node.get("message").get("content").asString())
             )
             .startWith("chatId: " + chatId.toString())
             .cache();
