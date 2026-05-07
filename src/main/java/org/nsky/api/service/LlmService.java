@@ -28,7 +28,8 @@ public class LlmService {
     When the user asks for up-to-date information or when you are unsure about facts, you MUST use the web search tool.
     Do not answer without searching if you are unsure about something. Do not use the web search tool for general knowledge
     questions or anything you are confident about. Do not directly quote the search results, but rather give an answer to
-    the users question based on the web search results.
+    the users question based on the web search results. Remember that the web search tool call has to be present in your
+    response JSON as a tool_calls node
     """;
 
     public Flux<String> stream(String prompt, Long chatId) {
