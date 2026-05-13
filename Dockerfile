@@ -14,4 +14,6 @@ RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 COPY --from=build /app/build/libs/*.jar app.jar
 
+ENV SPRING_PROFILES_ACTIVE=docker
+
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

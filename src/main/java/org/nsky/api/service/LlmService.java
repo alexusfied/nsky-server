@@ -1,10 +1,12 @@
 package org.nsky.api.service;
 
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nsky.api.model.Message;
 import org.nsky.api.repository.MessageRepository;
 import org.nsky.api.service.dto.OllamaStreamRequestDTO;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -18,12 +20,24 @@ import java.util.Map;
 
 @Slf4j
 @Service
-@AllArgsConstructor
 public class LlmService {
     private final MessageRepository messageRepository;
     private final ChatService chatService;
     private final SearchService searchService;
-    private final WebClient client = WebClient.create("http://localhost:11434");
+    private final WebClient client;
+
+    public LlmService(
+        @Value("${ollama.base.url}") String ollamaBaseUrl,
+        MessageRepository messageRepository,
+        ChatService chatService,
+        SearchService searchService
+    ) {
+        this.searchService = searchService;
+        this.chatService = chatService;
+        this.messageRepository = messageRepository;
+
+        this.client = WebClient.create(ollamaBaseUrl);
+    }
     private final String SYSTEM_PROMPT = """
     When the user asks for up-to-date information or when you are unsure about facts, you MUST use the web search tool.
     Do not answer without searching if you are unsure about something. Do not use the web search tool for general knowledge
