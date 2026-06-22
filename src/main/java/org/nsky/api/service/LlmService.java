@@ -1,7 +1,5 @@
 package org.nsky.api.service;
 
-import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nsky.api.model.Message;
 import org.nsky.api.repository.MessageRepository;
