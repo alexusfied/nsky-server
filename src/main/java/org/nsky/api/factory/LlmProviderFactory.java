@@ -18,7 +18,7 @@ public class LlmProviderFactory {
     }
 
     public LlmProvider getProvider(String key) {
-        LlmProvider provider = providers.get(key);
+        LlmProvider provider = providers.get(key.toLowerCase());
 
         if (provider == null) {
             throw new IllegalArgumentException("Unknown LLM provider: " + key);
