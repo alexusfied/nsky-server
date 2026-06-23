@@ -5,6 +5,7 @@ import org.nsky.api.service.SearchService;
 import org.nsky.api.service.dto.OllamaStreamRequestDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Component
 public class OllamaProvider implements LlmProvider {
     private final WebClient client;
     private final SearchService searchService;
@@ -26,6 +28,12 @@ public class OllamaProvider implements LlmProvider {
         this.client = WebClient.create(ollamaBaseUrl);
     }
 
+    @Override
+    public String getProviderKey() {
+        return "ollama";
+    }
+
+    @Override
     public Flux<String> stream(String userPrompt, String systemPrompt) {
         List<Map<String, String>> messages = new ArrayList<>(List.of(
             Map.of("role", "system", "content", systemPrompt),
