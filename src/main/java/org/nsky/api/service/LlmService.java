@@ -44,7 +44,7 @@ public class LlmService {
     response JSON as a tool_calls node
     """;
 
-    public Flux<String> stream(String prompt, Long chatId) {
+    public Flux<String> stream(String prompt, Long chatId, String provider) {
         List<Map<String, String>> messages = new ArrayList<>(List.of(
             Map.of("role", "system", "content", SYSTEM_PROMPT),
             Map.of("role", "user", "content", prompt)
