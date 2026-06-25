@@ -3,6 +3,7 @@ package org.nsky.api.provider.impl;
 import org.nsky.api.provider.LlmProvider;
 import org.nsky.api.service.SearchService;
 import org.nsky.api.service.dto.OllamaStreamRequestDTO;
+import org.nsky.api.service.dto.StreamResponseChunk;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -34,7 +35,7 @@ public class OllamaProvider implements LlmProvider {
     }
 
     @Override
-    public Flux<String> stream(String userPrompt, String systemPrompt) {
+    public Flux<StreamResponseChunk> stream(String userPrompt, String systemPrompt) {
         List<Map<String, String>> messages = new ArrayList<>(List.of(
             Map.of("role", "system", "content", systemPrompt),
             Map.of("role", "user", "content", userPrompt)
@@ -73,7 +74,7 @@ public class OllamaProvider implements LlmProvider {
             .flatMap(node -> {
                 if (node.get("message").has("tool_calls")) {
 
-                    Flux<String> webSearchSignal = Flux.just("WEB_SEARCH_STARTED");
+                    Flux<StreamResponseChunk> webSearchSignal = Flux.just(new StreamResponseChunk("web-search", ""));
 
                     String query = node.get("message").get("tool_calls").get(0).get("function").get("arguments").get("query").asString();
 
@@ -99,9 +100,10 @@ public class OllamaProvider implements LlmProvider {
                                     .bodyToFlux(JsonNode.class)
                                     .map(_node -> _node.get("message").get("content").asString());
                             }))
+                            .map(result -> new StreamResponseChunk("token", result))
                     );
                 }
-                return Flux.just(node.get("message").get("content").asString());
+                return Flux.just(new StreamResponseChunk("token", node.get("message").get("content").asString()));
             });
     }
 }

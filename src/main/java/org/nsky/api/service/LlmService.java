@@ -52,7 +52,6 @@ public class LlmService {
             .thenMany(
                 provider.stream(prompt, SYSTEM_PROMPT)
             )
-            .map(chunk -> new StreamResponseChunk("token", chunk))
             .startWith(new StreamResponseChunk("chat-id", chatId.toString()))
             .cache();
 

@@ -2,6 +2,7 @@ package org.nsky.api.provider.impl;
 
 import org.nsky.api.provider.LlmProvider;
 import org.nsky.api.service.dto.MistralStreamRequestDTO;
+import org.nsky.api.service.dto.StreamResponseChunk;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -32,7 +33,7 @@ public class MistralProvider implements LlmProvider {
     }
 
     @Override
-    public Flux<String> stream(String userPrompt, String systemPrompt) {
+    public Flux<StreamResponseChunk> stream(String userPrompt, String systemPrompt) {
         List<Map<String, String>> messages = new ArrayList<>(List.of(
             Map.of("role", "system", "content", systemPrompt),
             Map.of("role", "user", "content", userPrompt)
@@ -50,6 +51,7 @@ public class MistralProvider implements LlmProvider {
             .header("Authorization", "Bearer " + apiKey)
             .body(request, MistralStreamRequestDTO.class)
             .retrieve()
-            .bodyToFlux(String.class);
+            .bodyToFlux(String.class)
+            .map(result -> new StreamResponseChunk("token", result));
     }
 }
