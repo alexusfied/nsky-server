@@ -41,7 +41,8 @@ public class MistralProvider implements LlmProvider {
 
         Mono<MistralStreamRequestDTO> request = Mono.just(new MistralStreamRequestDTO(
             messages,
-            "mistral-medium-3-5"
+            "mistral-medium-3-5",
+            true
         ));
 
         return client

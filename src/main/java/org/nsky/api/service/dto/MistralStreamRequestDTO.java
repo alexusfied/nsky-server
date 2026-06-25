@@ -5,5 +5,6 @@ import java.util.Map;
 
 public record MistralStreamRequestDTO(
     List<Map<String, String>> messages,
-    String model
+    String model,
+    boolean stream
 ) {}
