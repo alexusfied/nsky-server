@@ -15,6 +15,6 @@ public class LlmController {
     @PostMapping("/stream")
     public Flux<String> stream(
         @RequestBody StreamRequestDTO request) {
-        return llmService.stream(request.prompt(), request.chatId());
+        return llmService.stream(request.prompt(), request.chatId(), request.provider());
     }
 }
