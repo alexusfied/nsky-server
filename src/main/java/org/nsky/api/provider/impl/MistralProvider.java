@@ -53,6 +53,7 @@ public class MistralProvider implements LlmProvider {
             .header("Authorization", "Bearer " + apiKey)
             .body(request, MistralStreamRequestDTO.class)
             .retrieve()
+            // TODO: This throws an error at the moment because of the [DONE] event sent by mistral
             .bodyToFlux(JsonNode.class)
             .map(result -> new StreamResponseChunk("token", result.get("choices").get(0).get("delta").get("content").asString()));
     }
