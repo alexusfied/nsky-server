@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import tools.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +53,7 @@ public class MistralProvider implements LlmProvider {
             .header("Authorization", "Bearer " + apiKey)
             .body(request, MistralStreamRequestDTO.class)
             .retrieve()
-            .bodyToFlux(String.class)
-            .map(result -> new StreamResponseChunk("token", result));
+            .bodyToFlux(JsonNode.class)
+            .map(result -> new StreamResponseChunk("token", result.get("choices").get(0).get("delta").get("content").asString()));
     }
 }

@@ -56,11 +56,16 @@ public class LlmService {
             .cache();
 
         Mono<Void> saveLlmResponse = llmResponse
+            .reduce(new StringBuilder(), (builder, chunk) -> {
+                if (!chunk.type().equals("chat-id")) return builder.append(chunk.content());
+                return builder;
+            })
+            .map(StringBuilder::toString)
             .flatMap(result -> {
                 Message response = new Message();
                 response.setChatId(chatId);
                 response.setAuthor("model");
-                response.setContent(result.content());
+                response.setContent(result);
 
                 return messageRepository.save(response);
             })
