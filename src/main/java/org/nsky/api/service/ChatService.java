@@ -26,7 +26,7 @@ public class ChatService {
     }
 
     public Flux<GetChatMessagesResponseDTO> findAllMessagesForChat(Long chatId) {
-        Flux<Message> messages = messageRepository.findAllByChatId(chatId);
+        Flux<Message> messages = messageRepository.findAllByChatIdOrderById(chatId);
 
         return messages.map(message ->
             new GetChatMessagesResponseDTO(message.getAuthor(), message.getContent())

@@ -1,6 +1,7 @@
 package org.nsky.api.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nsky.api.controller.dto.GetChatMessagesResponseDTO;
 import org.nsky.api.factory.LlmProviderFactory;
 import org.nsky.api.model.Message;
 import org.nsky.api.provider.LlmProvider;
@@ -9,6 +10,8 @@ import org.nsky.api.service.dto.StreamResponseChunk;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -26,13 +29,6 @@ public class LlmService {
         this.messageRepository = messageRepository;
         this.providerFactory = providerFactory;
     }
-    private final String SYSTEM_PROMPT = """
-    When the user asks for up-to-date information or when you are unsure about facts, you MUST use the web search tool.
-    Do not answer without searching if you are unsure about something. Do not use the web search tool for general knowledge
-    questions or anything you are confident about. Do not directly quote the search results, but rather give an answer to
-    the users question based on the web search results. Remember that the web search tool call has to be present in your
-    response JSON as a tool_calls node
-    """;
 
     public Flux<StreamResponseChunk> stream(String prompt, Long chatId, String providerKey) {
         LlmProvider provider = providerFactory.getProvider(providerKey);
@@ -48,10 +44,12 @@ public class LlmService {
         userPrompt.setContent(prompt);
         userPrompt.setChatId(chatId);
 
+
         Flux<StreamResponseChunk> llmResponse = messageRepository.save(userPrompt)
-            .thenMany(
-                provider.stream(prompt, SYSTEM_PROMPT)
-            )
+            .thenMany(chatService.findAllMessagesForChat(chatId))
+            .map(message -> Map.of("role", message.author(), "content", message.content()))
+            .collectList()
+            .flatMapMany(provider::stream)
             .startWith(new StreamResponseChunk("chat-id", chatId.toString()))
             .cache();
 
@@ -64,7 +62,7 @@ public class LlmService {
             .flatMap(result -> {
                 Message response = new Message();
                 response.setChatId(chatId);
-                response.setAuthor("model");
+                response.setAuthor("assistant");
                 response.setContent(result);
 
                 return messageRepository.save(response);

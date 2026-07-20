@@ -21,6 +21,14 @@ public class OllamaProvider implements LlmProvider {
     private final WebClient client;
     private final SearchService searchService;
 
+    private static final String SYSTEM_PROMPT = """
+    When the user asks for up-to-date information or when you are unsure about facts, you MUST use the web search tool.
+    Do not answer without searching if you are unsure about something. Do not use the web search tool for general knowledge
+    questions or anything you are confident about. Do not directly quote the search results, but rather give an answer to
+    the users question based on the web search results. Remember that the web search tool call has to be present in your
+    response JSON as a tool_calls node
+    """;
+
     public OllamaProvider(
         @Value("${ollama.base.url}") String ollamaBaseUrl,
         SearchService searchService
@@ -35,11 +43,8 @@ public class OllamaProvider implements LlmProvider {
     }
 
     @Override
-    public Flux<StreamResponseChunk> stream(String userPrompt, String systemPrompt) {
-        List<Map<String, String>> messages = new ArrayList<>(List.of(
-            Map.of("role", "system", "content", systemPrompt),
-            Map.of("role", "user", "content", userPrompt)
-        ));
+    public Flux<StreamResponseChunk> stream(List<Map<String, String>> messages) {
+        messages.addFirst(Map.of("role", "system", "content", SYSTEM_PROMPT));
 
         List<Map<String, Object>> tools = List.of(
             Map.of("type", "function", "function", Map.of(

@@ -34,12 +34,7 @@ public class MistralProvider implements LlmProvider {
     }
 
     @Override
-    public Flux<StreamResponseChunk> stream(String userPrompt, String systemPrompt) {
-        List<Map<String, String>> messages = new ArrayList<>(List.of(
-            Map.of("role", "system", "content", systemPrompt),
-            Map.of("role", "user", "content", userPrompt)
-        ));
-
+    public Flux<StreamResponseChunk> stream(List<Map<String, String>> messages) {
         Mono<MistralStreamRequestDTO> request = Mono.just(new MistralStreamRequestDTO(
             messages,
             "mistral-medium-3-5",
