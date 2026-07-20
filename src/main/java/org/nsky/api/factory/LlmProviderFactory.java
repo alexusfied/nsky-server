@@ -1,5 +1,6 @@
 package org.nsky.api.factory;
 
+import org.nsky.api.exception.LlmProviderNotFoundException;
 import org.nsky.api.provider.LlmProvider;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +22,7 @@ public class LlmProviderFactory {
         LlmProvider provider = providers.get(key.toLowerCase());
 
         if (provider == null) {
-            throw new IllegalArgumentException("Unknown LLM provider: " + key);
+            throw new LlmProviderNotFoundException("Unknown LLM provider: " + key);
         }
 
         return provider;
