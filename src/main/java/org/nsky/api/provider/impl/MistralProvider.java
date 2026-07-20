@@ -4,28 +4,34 @@ import org.nsky.api.provider.LlmProvider;
 import org.nsky.api.service.dto.MistralStreamRequestDTO;
 import org.nsky.api.service.dto.StreamResponseChunk;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @Component
 public class MistralProvider implements LlmProvider {
+    private static final String DONE_EVENT = "[DONE]";
+
     private final WebClient client;
     private final String apiKey;
+    private final ObjectMapper objectMapper;
 
     public MistralProvider(
         @Value("${mistral.base.url}") String mistralBaseUrl,
-        @Value("${mistral.api.key}") String apiKey
+        @Value("${mistral.api.key}") String apiKey,
+        ObjectMapper objectMapper
     ) {
         this.client = WebClient.create(mistralBaseUrl);
         this.apiKey = apiKey;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -48,8 +54,9 @@ public class MistralProvider implements LlmProvider {
             .header("Authorization", "Bearer " + apiKey)
             .body(request, MistralStreamRequestDTO.class)
             .retrieve()
-            // TODO: This throws an error at the moment because of the [DONE] event sent by mistral
-            .bodyToFlux(JsonNode.class)
+            .bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {})
+            .filter(event -> event.data() != null && !DONE_EVENT.equals(event.data()))
+            .map(event -> objectMapper.readTree(event.data()))
             .map(result -> new StreamResponseChunk("token", result.get("choices").get(0).get("delta").get("content").asString()));
     }
 }
