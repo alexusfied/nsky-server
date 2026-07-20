@@ -2,10 +2,12 @@ package org.nsky.api.controller;
 
 import lombok.AllArgsConstructor;
 import org.nsky.api.controller.dto.StreamRequestDTO;
+import org.nsky.api.controller.dto.TokenEventDTO;
 import org.nsky.api.service.LlmService;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalTime;
 
@@ -14,6 +16,7 @@ import java.time.LocalTime;
 @AllArgsConstructor
 public class LlmController {
     private final LlmService llmService;
+    private final ObjectMapper objectMapper;
 
     @PostMapping("/stream")
     public Flux<ServerSentEvent<String>> stream(
@@ -23,8 +26,16 @@ public class LlmController {
             .map(responseChunk -> ServerSentEvent.<String> builder()
                 .id(LocalTime.now().toString())
                 .event(responseChunk.type())
-                .data(responseChunk.content())
+                .data(writeJson(new TokenEventDTO(responseChunk.content())))
                 .build()
             );
+    }
+
+    private String writeJson(Object obj) {
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize SSE payload", e);
+        }
     }
 }
