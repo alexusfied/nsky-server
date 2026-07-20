@@ -2,12 +2,14 @@ package org.nsky.api.provider.impl;
 
 import org.nsky.api.provider.LlmProvider;
 import org.nsky.api.service.dto.MistralStreamRequestDTO;
+import org.nsky.api.service.dto.StreamResponseChunk;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import tools.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +34,7 @@ public class MistralProvider implements LlmProvider {
     }
 
     @Override
-    public Flux<String> stream(String userPrompt, String systemPrompt) {
+    public Flux<StreamResponseChunk> stream(String userPrompt, String systemPrompt) {
         List<Map<String, String>> messages = new ArrayList<>(List.of(
             Map.of("role", "system", "content", systemPrompt),
             Map.of("role", "user", "content", userPrompt)
@@ -40,7 +42,8 @@ public class MistralProvider implements LlmProvider {
 
         Mono<MistralStreamRequestDTO> request = Mono.just(new MistralStreamRequestDTO(
             messages,
-            "mistral-medium-3-5"
+            "mistral-medium-3-5",
+            true
         ));
 
         return client
@@ -50,6 +53,8 @@ public class MistralProvider implements LlmProvider {
             .header("Authorization", "Bearer " + apiKey)
             .body(request, MistralStreamRequestDTO.class)
             .retrieve()
-            .bodyToFlux(String.class);
+            // TODO: This throws an error at the moment because of the [DONE] event sent by mistral
+            .bodyToFlux(JsonNode.class)
+            .map(result -> new StreamResponseChunk("token", result.get("choices").get(0).get("delta").get("content").asString()));
     }
 }

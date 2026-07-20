@@ -5,6 +5,7 @@ import org.nsky.api.factory.LlmProviderFactory;
 import org.nsky.api.model.Message;
 import org.nsky.api.provider.LlmProvider;
 import org.nsky.api.repository.MessageRepository;
+import org.nsky.api.service.dto.StreamResponseChunk;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -33,7 +34,7 @@ public class LlmService {
     response JSON as a tool_calls node
     """;
 
-    public Flux<String> stream(String prompt, Long chatId, String providerKey) {
+    public Flux<StreamResponseChunk> stream(String prompt, Long chatId, String providerKey) {
         LlmProvider provider = providerFactory.getProvider(providerKey);
 
         return chatId == null
@@ -41,22 +42,22 @@ public class LlmService {
             : saveUserPromptAndStream(provider, chatId, prompt);
     }
 
-    private Flux<String> saveUserPromptAndStream(LlmProvider provider, Long chatId, String prompt) {
+    private Flux<StreamResponseChunk> saveUserPromptAndStream(LlmProvider provider, Long chatId, String prompt) {
         Message userPrompt = new Message();
         userPrompt.setAuthor("user");
         userPrompt.setContent(prompt);
         userPrompt.setChatId(chatId);
 
-        Flux<String> llmResponse = messageRepository.save(userPrompt)
+        Flux<StreamResponseChunk> llmResponse = messageRepository.save(userPrompt)
             .thenMany(
                 provider.stream(prompt, SYSTEM_PROMPT)
             )
-            .startWith("chatId: " + chatId.toString())
+            .startWith(new StreamResponseChunk("chat-id", chatId.toString()))
             .cache();
 
         Mono<Void> saveLlmResponse = llmResponse
             .reduce(new StringBuilder(), (builder, chunk) -> {
-                if (!chunk.startsWith("chatId")) return builder.append(chunk);
+                if (!chunk.type().equals("chat-id")) return builder.append(chunk.content());
                 return builder;
             })
             .map(StringBuilder::toString)
