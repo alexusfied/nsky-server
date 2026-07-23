@@ -93,7 +93,7 @@ public class OllamaProvider implements LlmProvider {
                                 req.messages().add(Map.of("role", "tool", "tool_name", "perform_web_search", "content", searchResult));
 
                                 Mono<OllamaStreamRequestDTO> updatedRequest = Mono.just(new OllamaStreamRequestDTO(
-                                    "mistral",
+                                    model,
                                     req.messages(),
                                     req.tools()
                                 ));
