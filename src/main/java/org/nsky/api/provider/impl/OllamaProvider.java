@@ -12,7 +12,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tools.jackson.databind.JsonNode;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +19,7 @@ import java.util.Map;
 public class OllamaProvider implements LlmProvider {
     private final WebClient client;
     private final SearchService searchService;
+    private final String model;
 
     private static final String SYSTEM_PROMPT = """
     When the user asks for up-to-date information or when you are unsure about facts, you MUST use the web search tool.
@@ -30,9 +30,11 @@ public class OllamaProvider implements LlmProvider {
     """;
 
     public OllamaProvider(
+        @Value("${ollama.model.name}") String model,
         @Value("${ollama.base.url}") String ollamaBaseUrl,
         SearchService searchService
     ) {
+        this.model = model;
         this.searchService = searchService;
         this.client = WebClient.create(ollamaBaseUrl);
     }
@@ -64,7 +66,7 @@ public class OllamaProvider implements LlmProvider {
         );
 
         Mono<OllamaStreamRequestDTO> request = Mono.just(new OllamaStreamRequestDTO(
-            "mistral",
+            model,
             messages,
             tools
         ));
