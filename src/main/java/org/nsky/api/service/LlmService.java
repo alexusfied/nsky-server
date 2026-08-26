@@ -5,8 +5,10 @@ import org.nsky.api.controller.dto.GetChatMessagesResponseDTO;
 import org.nsky.api.factory.LlmProviderFactory;
 import org.nsky.api.model.Message;
 import org.nsky.api.provider.LlmProvider;
+import org.nsky.api.provider.impl.OllamaProvider;
 import org.nsky.api.repository.MessageRepository;
 import org.nsky.api.service.dto.StreamResponseChunk;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -19,15 +21,23 @@ public class LlmService {
     private final MessageRepository messageRepository;
     private final ChatService chatService;
     private final LlmProviderFactory providerFactory;
+    private final OllamaProvider ollamaProvider;
 
     public LlmService(
         MessageRepository messageRepository,
         ChatService chatService,
-        LlmProviderFactory providerFactory
+        LlmProviderFactory providerFactory,
+        OllamaProvider ollamaProvider
     ) {
         this.chatService = chatService;
         this.messageRepository = messageRepository;
         this.providerFactory = providerFactory;
+        this.ollamaProvider = ollamaProvider;
+    }
+
+    public Flux<StreamResponseChunk> streamSpringAi() {
+       return ollamaProvider.streamSpringAi()
+           .map(response -> new StreamResponseChunk("token", response.getResult().getOutput().getText()));
     }
 
     public Flux<StreamResponseChunk> stream(String prompt, Long chatId, String providerKey) {

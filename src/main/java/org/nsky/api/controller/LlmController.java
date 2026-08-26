@@ -31,6 +31,17 @@ public class LlmController {
             );
     }
 
+    @GetMapping("/stream-spring-ai")
+    public Flux<ServerSentEvent<String>> streamSpringAi() {
+        return llmService.streamSpringAi()
+            .map(chunk -> ServerSentEvent.<String> builder()
+                .id(LocalTime.now().toString())
+                .event(chunk.type())
+                .data(writeJson(new TokenEventDTO(chunk.content())))
+                .build()
+                );
+    }
+
     private String writeJson(Object obj) {
         try {
             return objectMapper.writeValueAsString(obj);

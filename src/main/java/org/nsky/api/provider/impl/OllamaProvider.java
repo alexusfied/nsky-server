@@ -1,25 +1,30 @@
 package org.nsky.api.provider.impl;
 
+import java.util.List;
+import java.util.Map;
+
 import org.nsky.api.provider.LlmProvider;
 import org.nsky.api.service.SearchService;
 import org.nsky.api.service.dto.OllamaStreamRequestDTO;
 import org.nsky.api.service.dto.StreamResponseChunk;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tools.jackson.databind.JsonNode;
-
-import java.util.List;
-import java.util.Map;
 
 @Component
 public class OllamaProvider implements LlmProvider {
     private final WebClient client;
     private final SearchService searchService;
     private final String model;
+    private final OllamaChatModel chatModel;
 
     private static final String SYSTEM_PROMPT = """
     When the user asks for up-to-date information or when you are unsure about facts, you MUST use the web search tool.
@@ -32,16 +37,23 @@ public class OllamaProvider implements LlmProvider {
     public OllamaProvider(
         @Value("${ollama.model.name}") String model,
         @Value("${ollama.base.url}") String ollamaBaseUrl,
-        SearchService searchService
+        SearchService searchService,
+        OllamaChatModel chatModel
     ) {
         this.model = model;
         this.searchService = searchService;
         this.client = WebClient.create(ollamaBaseUrl);
+        this.chatModel = chatModel;
     }
 
     @Override
     public String getProviderKey() {
         return "ollama";
+    }
+
+    public Flux<ChatResponse> streamSpringAi() {
+
+        return chatModel.stream(new Prompt("Write 4 random words"));
     }
 
     @Override
