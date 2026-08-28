@@ -7,9 +7,11 @@ import org.nsky.api.provider.LlmProvider;
 import org.nsky.api.service.SearchService;
 import org.nsky.api.service.dto.OllamaStreamRequestDTO;
 import org.nsky.api.service.dto.StreamResponseChunk;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -24,7 +26,7 @@ public class OllamaProvider implements LlmProvider {
     private final WebClient client;
     private final SearchService searchService;
     private final String model;
-    private final OllamaChatModel chatModel;
+    private final ChatClient chatClient;
 
     private static final String SYSTEM_PROMPT = """
     When the user asks for up-to-date information or when you are unsure about facts, you MUST use the web search tool.
@@ -38,12 +40,13 @@ public class OllamaProvider implements LlmProvider {
         @Value("${ollama.model.name}") String model,
         @Value("${ollama.base.url}") String ollamaBaseUrl,
         SearchService searchService,
-        OllamaChatModel chatModel
+        @Qualifier("ollamaChatClient")
+        ChatClient chatClient
     ) {
         this.model = model;
         this.searchService = searchService;
         this.client = WebClient.create(ollamaBaseUrl);
-        this.chatModel = chatModel;
+        this.chatClient = chatClient;
     }
 
     @Override
@@ -52,8 +55,7 @@ public class OllamaProvider implements LlmProvider {
     }
 
     public Flux<ChatResponse> streamSpringAi(String prompt) {
-
-        return chatModel.stream(new Prompt(prompt));
+        return chatClient.prompt(new Prompt(prompt)).stream().chatResponse();
     }
 
     @Override
