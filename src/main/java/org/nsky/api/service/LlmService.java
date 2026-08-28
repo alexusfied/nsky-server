@@ -35,15 +35,17 @@ public class LlmService {
         this.ollamaProvider = ollamaProvider;
     }
 
-    public Flux<StreamResponseChunk> streamSpringAi(String prompt) {
-       return ollamaProvider.streamSpringAi(prompt)
-           .map(response -> {
-               String thinking = response.getResult().getMetadata().get("thinking");
+    public Flux<StreamResponseChunk> streamSpringAi(String prompt, String providerKey) {
+        LlmProvider provider = providerFactory.getProvider(providerKey);
 
-               if (thinking != null && !thinking.isEmpty()) return new StreamResponseChunk("think", thinking);
-              
-               return new StreamResponseChunk("token", response.getResult().getOutput().getText());
-           });
+        return provider.streamSpringAi(prompt)
+            .map(response -> {
+                String thinking = response.getResult().getMetadata().get("thinking");
+
+                if (thinking != null && !thinking.isEmpty()) return new StreamResponseChunk("think", thinking);
+               
+                return new StreamResponseChunk("token", response.getResult().getOutput().getText());
+            });
     }
 
     public Flux<StreamResponseChunk> stream(String prompt, Long chatId, String providerKey) {

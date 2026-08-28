@@ -1,20 +1,25 @@
 package org.nsky.api.provider.impl;
 
+import java.util.List;
+import java.util.Map;
+
 import org.nsky.api.provider.LlmProvider;
 import org.nsky.api.service.dto.MistralStreamRequestDTO;
 import org.nsky.api.service.dto.StreamResponseChunk;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tools.jackson.databind.ObjectMapper;
-
-import java.util.List;
-import java.util.Map;
 
 @Component
 public class MistralProvider implements LlmProvider {
@@ -23,20 +28,33 @@ public class MistralProvider implements LlmProvider {
     private final WebClient client;
     private final String apiKey;
     private final ObjectMapper objectMapper;
+    private final ChatClient chatClient;
 
     public MistralProvider(
         @Value("${mistral.base.url}") String mistralBaseUrl,
         @Value("${mistral.api.key}") String apiKey,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        @Qualifier("mistralChatClient")
+        ChatClient chatClient
+
     ) {
         this.client = WebClient.create(mistralBaseUrl);
         this.apiKey = apiKey;
         this.objectMapper = objectMapper;
+        this.chatClient = chatClient;
     }
 
     @Override
     public String getProviderKey() {
         return "mistral";
+    }
+
+    @Override
+    public Flux<ChatResponse> streamSpringAi(String prompt) {
+        return chatClient
+            .prompt(new Prompt(prompt))
+            .stream()
+            .chatResponse();
     }
 
     @Override

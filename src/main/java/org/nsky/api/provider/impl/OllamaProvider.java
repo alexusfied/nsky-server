@@ -57,6 +57,7 @@ public class OllamaProvider implements LlmProvider {
         return "ollama";
     }
 
+    @Override
     public Flux<ChatResponse> streamSpringAi(String prompt) {
         return chatClient
             .prompt(new Prompt(prompt))

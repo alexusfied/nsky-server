@@ -34,7 +34,7 @@ public class LlmController {
     @PostMapping("/stream-spring-ai")
     public Flux<ServerSentEvent<String>> streamSpringAi(
         @RequestBody StreamRequestDTO request) {
-        return llmService.streamSpringAi(request.prompt())
+        return llmService.streamSpringAi(request.prompt(), request.provider())
             .map(chunk -> ServerSentEvent.<String> builder()
                 .id(LocalTime.now().toString())
                 .event(chunk.type())
