@@ -51,9 +51,9 @@ public class OllamaProvider implements LlmProvider {
         return "ollama";
     }
 
-    public Flux<ChatResponse> streamSpringAi() {
+    public Flux<ChatResponse> streamSpringAi(String prompt) {
 
-        return chatModel.stream(new Prompt("Write 4 random words"));
+        return chatModel.stream(new Prompt(prompt));
     }
 
     @Override

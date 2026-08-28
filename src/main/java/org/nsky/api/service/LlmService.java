@@ -35,8 +35,8 @@ public class LlmService {
         this.ollamaProvider = ollamaProvider;
     }
 
-    public Flux<StreamResponseChunk> streamSpringAi() {
-       return ollamaProvider.streamSpringAi()
+    public Flux<StreamResponseChunk> streamSpringAi(String prompt) {
+       return ollamaProvider.streamSpringAi(prompt)
            .map(response -> {
                String thinking = response.getResult().getMetadata().get("thinking");
 
