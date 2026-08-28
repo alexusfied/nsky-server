@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.nsky.api.provider.LlmProvider;
+import org.nsky.api.service.DateTimeService;
 import org.nsky.api.service.SearchService;
 import org.nsky.api.service.dto.OllamaStreamRequestDTO;
 import org.nsky.api.service.dto.StreamResponseChunk;
@@ -25,11 +26,12 @@ import tools.jackson.databind.JsonNode;
 public class OllamaProvider implements LlmProvider {
     private final WebClient client;
     private final SearchService searchService;
+    private final DateTimeService dateTimeService;
     private final String model;
     private final ChatClient chatClient;
 
     private static final String SYSTEM_PROMPT = """
-    When the user asks for up-to-date information or when you are unsure about facts, you MUST use the web search tool.
+    When the user asks for up-to-date information or when you are unsure about facts, you MUST use the web search tool. When asked about the current time or date, use the date time tool. 
     Do not answer without searching if you are unsure about something. Do not use the web search tool for general knowledge
     questions or anything you are confident about. Do not directly quote the search results, but rather give an answer to
     the users question based on the web search results. Remember that the web search tool call has to be present in your
@@ -41,12 +43,14 @@ public class OllamaProvider implements LlmProvider {
         @Value("${ollama.base.url}") String ollamaBaseUrl,
         SearchService searchService,
         @Qualifier("ollamaChatClient")
-        ChatClient chatClient
+        ChatClient chatClient,
+        DateTimeService dateTimeService
     ) {
         this.model = model;
         this.searchService = searchService;
         this.client = WebClient.create(ollamaBaseUrl);
         this.chatClient = chatClient;
+        this.dateTimeService = dateTimeService;
     }
 
     @Override
@@ -55,7 +59,11 @@ public class OllamaProvider implements LlmProvider {
     }
 
     public Flux<ChatResponse> streamSpringAi(String prompt) {
-        return chatClient.prompt(new Prompt(prompt)).stream().chatResponse();
+        return chatClient
+            .prompt(new Prompt(prompt))
+            .tools(List.of(searchService, dateTimeService))
+            .stream()
+            .chatResponse();
     }
 
     @Override
