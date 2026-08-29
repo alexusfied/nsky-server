@@ -35,21 +35,13 @@ public class LlmService {
         this.ollamaProvider = ollamaProvider;
     }
 
-    public Flux<StreamResponseChunk> streamSpringAi(String prompt, Long chatId, String providerKey) {
+    public Flux<StreamResponseChunk> stream(String prompt, Long chatId, String providerKey) {
         LlmProvider provider = providerFactory.getProvider(providerKey);
 
         return chatId == null
             ? chatService.createChat(prompt).flatMapMany(chat -> saveMessagesAndStream(provider, chat.getId(), prompt))
             : saveMessagesAndStream(provider, chatId, prompt);
 
-    }
-
-    public Flux<StreamResponseChunk> stream(String prompt, Long chatId, String providerKey) {
-        LlmProvider provider = providerFactory.getProvider(providerKey);
-
-        return chatId == null
-            ? chatService.createChat(prompt).flatMapMany(chat -> saveUserPromptAndStream(provider, chat.getId(), prompt))
-            : saveUserPromptAndStream(provider, chatId, prompt);
     }
 
     private Flux<StreamResponseChunk> saveMessagesAndStream(LlmProvider provider, Long chatId, String prompt) {
@@ -62,7 +54,7 @@ public class LlmService {
         Flux<StreamResponseChunk> llmResponse = messageRepository.save(userPrompt)
             .thenMany(chatService.findAllMessagesForChat(chatId))
             .collectList()
-            .flatMapMany(provider::streamSpringAi)
+            .flatMapMany(provider::stream)
             .map(response -> {
                 String thinking = response.getResult().getMetadata().get("thinking");
 
@@ -70,40 +62,6 @@ public class LlmService {
 
                 return new StreamResponseChunk("token", response.getResult().getOutput().getText());
             })
-            .startWith(new StreamResponseChunk("chat-id", chatId.toString()))
-            .cache();
-
-        Mono<Void> saveLlmResponse = llmResponse
-            .reduce(new StringBuilder(), (builder, chunk) -> {
-                if (!chunk.type().equals("chat-id")) return builder.append(chunk.content());
-                return builder;
-            })
-            .map(StringBuilder::toString)
-            .flatMap(result -> {
-                Message response = new Message();
-                response.setChatId(chatId);
-                response.setAuthor("assistant");
-                response.setContent(result);
-
-                return messageRepository.save(response);
-            })
-            .then();
-
-        return llmResponse.concatWith(saveLlmResponse.then(Mono.empty()));
-    }
-
-    private Flux<StreamResponseChunk> saveUserPromptAndStream(LlmProvider provider, Long chatId, String prompt) {
-        Message userPrompt = new Message();
-        userPrompt.setAuthor("user");
-        userPrompt.setContent(prompt);
-        userPrompt.setChatId(chatId);
-
-
-        Flux<StreamResponseChunk> llmResponse = messageRepository.save(userPrompt)
-            .thenMany(chatService.findAllMessagesForChat(chatId))
-            .map(message -> Map.of("role", message.author(), "content", message.content()))
-            .collectList()
-            .flatMapMany(provider::stream)
             .startWith(new StreamResponseChunk("chat-id", chatId.toString()))
             .cache();
 
