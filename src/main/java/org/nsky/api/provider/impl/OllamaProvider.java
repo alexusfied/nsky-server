@@ -3,16 +3,21 @@ package org.nsky.api.provider.impl;
 import java.util.List;
 import java.util.Map;
 
+import org.nsky.api.controller.dto.GetChatMessagesResponseDTO;
 import org.nsky.api.provider.LlmProvider;
 import org.nsky.api.service.DateTimeService;
 import org.nsky.api.service.SearchService;
 import org.nsky.api.service.dto.OllamaStreamRequestDTO;
 import org.nsky.api.service.dto.StreamResponseChunk;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.security.autoconfigure.SecurityProperties.User;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -58,9 +63,15 @@ public class OllamaProvider implements LlmProvider {
     }
 
     @Override
-    public Flux<ChatResponse> streamSpringAi(String prompt) {
+    public Flux<ChatResponse> streamSpringAi(List<GetChatMessagesResponseDTO> messages) {
+        List<Message> msg = messages.stream().<Message>map(message -> {
+            return message.author().equals("assistant")
+                ? new AssistantMessage(message.content())
+                : new UserMessage(message.content());
+        }).toList();
+
         return chatClient
-            .prompt(new Prompt(prompt))
+            .prompt(new Prompt(msg))
             .tools(List.of(searchService, dateTimeService))
             .stream()
             .chatResponse();

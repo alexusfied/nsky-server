@@ -35,17 +35,13 @@ public class LlmService {
         this.ollamaProvider = ollamaProvider;
     }
 
-    public Flux<StreamResponseChunk> streamSpringAi(String prompt, String providerKey) {
+    public Flux<StreamResponseChunk> streamSpringAi(String prompt, Long chatId, String providerKey) {
         LlmProvider provider = providerFactory.getProvider(providerKey);
 
-        return provider.streamSpringAi(prompt)
-            .map(response -> {
-                String thinking = response.getResult().getMetadata().get("thinking");
+        return chatId == null
+            ? chatService.createChat(prompt).flatMapMany(chat -> saveMessagesAndStream(provider, chat.getId(), prompt))
+            : saveMessagesAndStream(provider, chatId, prompt);
 
-                if (thinking != null && !thinking.isEmpty()) return new StreamResponseChunk("think", thinking);
-               
-                return new StreamResponseChunk("token", response.getResult().getOutput().getText());
-            });
     }
 
     public Flux<StreamResponseChunk> stream(String prompt, Long chatId, String providerKey) {
@@ -54,6 +50,46 @@ public class LlmService {
         return chatId == null
             ? chatService.createChat(prompt).flatMapMany(chat -> saveUserPromptAndStream(provider, chat.getId(), prompt))
             : saveUserPromptAndStream(provider, chatId, prompt);
+    }
+
+    private Flux<StreamResponseChunk> saveMessagesAndStream(LlmProvider provider, Long chatId, String prompt) {
+        Message userPrompt = new Message();
+        userPrompt.setAuthor("user");
+        userPrompt.setContent(prompt);
+        userPrompt.setChatId(chatId);
+
+
+        Flux<StreamResponseChunk> llmResponse = messageRepository.save(userPrompt)
+            .thenMany(chatService.findAllMessagesForChat(chatId))
+            .collectList()
+            .flatMapMany(provider::streamSpringAi)
+            .map(response -> {
+                String thinking = response.getResult().getMetadata().get("thinking");
+
+                if (thinking != null && !thinking.isEmpty()) return new StreamResponseChunk("think", thinking);
+
+                return new StreamResponseChunk("token", response.getResult().getOutput().getText());
+            })
+            .startWith(new StreamResponseChunk("chat-id", chatId.toString()))
+            .cache();
+
+        Mono<Void> saveLlmResponse = llmResponse
+            .reduce(new StringBuilder(), (builder, chunk) -> {
+                if (!chunk.type().equals("chat-id")) return builder.append(chunk.content());
+                return builder;
+            })
+            .map(StringBuilder::toString)
+            .flatMap(result -> {
+                Message response = new Message();
+                response.setChatId(chatId);
+                response.setAuthor("assistant");
+                response.setContent(result);
+
+                return messageRepository.save(response);
+            })
+            .then();
+
+        return llmResponse.concatWith(saveLlmResponse.then(Mono.empty()));
     }
 
     private Flux<StreamResponseChunk> saveUserPromptAndStream(LlmProvider provider, Long chatId, String prompt) {

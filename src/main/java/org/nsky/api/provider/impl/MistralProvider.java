@@ -3,10 +3,16 @@ package org.nsky.api.provider.impl;
 import java.util.List;
 import java.util.Map;
 
+import org.nsky.api.controller.dto.GetChatMessagesResponseDTO;
 import org.nsky.api.provider.LlmProvider;
+import org.nsky.api.service.DateTimeService;
+import org.nsky.api.service.SearchService;
 import org.nsky.api.service.dto.MistralStreamRequestDTO;
 import org.nsky.api.service.dto.StreamResponseChunk;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,19 +35,25 @@ public class MistralProvider implements LlmProvider {
     private final String apiKey;
     private final ObjectMapper objectMapper;
     private final ChatClient chatClient;
+    private final SearchService searchService;
+    private final DateTimeService dateTimeService;
 
     public MistralProvider(
         @Value("${mistral.base.url}") String mistralBaseUrl,
         @Value("${mistral.api.key}") String apiKey,
         ObjectMapper objectMapper,
         @Qualifier("mistralChatClient")
-        ChatClient chatClient
+        ChatClient chatClient,
+        SearchService searchService,
+        DateTimeService dateTimeService
 
     ) {
         this.client = WebClient.create(mistralBaseUrl);
         this.apiKey = apiKey;
         this.objectMapper = objectMapper;
         this.chatClient = chatClient;
+        this.searchService = searchService;
+        this.dateTimeService = dateTimeService;
     }
 
     @Override
@@ -50,9 +62,16 @@ public class MistralProvider implements LlmProvider {
     }
 
     @Override
-    public Flux<ChatResponse> streamSpringAi(String prompt) {
+    public Flux<ChatResponse> streamSpringAi(List<GetChatMessagesResponseDTO> messages) {
+        List<Message> msg = messages.stream().<Message>map(message -> {
+            return message.author().equals("assistant")
+                ? new AssistantMessage(message.content())
+                : new UserMessage(message.content());
+        }).toList();
+
         return chatClient
-            .prompt(new Prompt(prompt))
+            .prompt(new Prompt(msg))
+            .tools(List.of(searchService, dateTimeService))
             .stream()
             .chatResponse();
     }
