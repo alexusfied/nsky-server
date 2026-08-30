@@ -67,7 +67,7 @@ public class LlmService {
 
         Mono<Void> saveLlmResponse = llmResponse
             .reduce(new StringBuilder(), (builder, chunk) -> {
-                if (!chunk.type().equals("chat-id")) return builder.append(chunk.content());
+                if (!(chunk.type().equals("chat-id") || chunk.type().equals("think")) ) return builder.append(chunk.content());
                 return builder;
             })
             .map(StringBuilder::toString)
