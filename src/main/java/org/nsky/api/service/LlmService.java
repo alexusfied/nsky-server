@@ -5,8 +5,10 @@ import org.nsky.api.controller.dto.GetChatMessagesResponseDTO;
 import org.nsky.api.factory.LlmProviderFactory;
 import org.nsky.api.model.Message;
 import org.nsky.api.provider.LlmProvider;
+import org.nsky.api.provider.impl.OllamaProvider;
 import org.nsky.api.repository.MessageRepository;
 import org.nsky.api.service.dto.StreamResponseChunk;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -19,26 +21,30 @@ public class LlmService {
     private final MessageRepository messageRepository;
     private final ChatService chatService;
     private final LlmProviderFactory providerFactory;
+    private final OllamaProvider ollamaProvider;
 
     public LlmService(
         MessageRepository messageRepository,
         ChatService chatService,
-        LlmProviderFactory providerFactory
+        LlmProviderFactory providerFactory,
+        OllamaProvider ollamaProvider
     ) {
         this.chatService = chatService;
         this.messageRepository = messageRepository;
         this.providerFactory = providerFactory;
+        this.ollamaProvider = ollamaProvider;
     }
 
     public Flux<StreamResponseChunk> stream(String prompt, Long chatId, String providerKey) {
         LlmProvider provider = providerFactory.getProvider(providerKey);
 
         return chatId == null
-            ? chatService.createChat(prompt).flatMapMany(chat -> saveUserPromptAndStream(provider, chat.getId(), prompt))
-            : saveUserPromptAndStream(provider, chatId, prompt);
+            ? chatService.createChat(prompt).flatMapMany(chat -> saveMessagesAndStream(provider, chat.getId(), prompt))
+            : saveMessagesAndStream(provider, chatId, prompt);
+
     }
 
-    private Flux<StreamResponseChunk> saveUserPromptAndStream(LlmProvider provider, Long chatId, String prompt) {
+    private Flux<StreamResponseChunk> saveMessagesAndStream(LlmProvider provider, Long chatId, String prompt) {
         Message userPrompt = new Message();
         userPrompt.setAuthor("user");
         userPrompt.setContent(prompt);
@@ -47,9 +53,15 @@ public class LlmService {
 
         Flux<StreamResponseChunk> llmResponse = messageRepository.save(userPrompt)
             .thenMany(chatService.findAllMessagesForChat(chatId))
-            .map(message -> Map.of("role", message.author(), "content", message.content()))
             .collectList()
             .flatMapMany(provider::stream)
+            .map(response -> {
+                String thinking = response.getResult().getMetadata().get("thinking");
+
+                if (thinking != null && !thinking.isEmpty()) return new StreamResponseChunk("think", thinking);
+
+                return new StreamResponseChunk("token", response.getResult().getOutput().getText());
+            })
             .startWith(new StreamResponseChunk("chat-id", chatId.toString()))
             .cache();
 

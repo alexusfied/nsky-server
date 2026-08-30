@@ -19,16 +19,15 @@ public class LlmController {
     private final ObjectMapper objectMapper;
 
     @PostMapping("/stream")
-    public Flux<ServerSentEvent<String>> stream(
+    public Flux<ServerSentEvent<String>> streamSpringAi(
         @RequestBody StreamRequestDTO request) {
-        return llmService
-            .stream(request.prompt(), request.chatId(), request.provider())
-            .map(responseChunk -> ServerSentEvent.<String> builder()
+        return llmService.stream(request.prompt(), request.chatId(), request.provider())
+            .map(chunk -> ServerSentEvent.<String> builder()
                 .id(LocalTime.now().toString())
-                .event(responseChunk.type())
-                .data(writeJson(new TokenEventDTO(responseChunk.content())))
+                .event(chunk.type())
+                .data(writeJson(new TokenEventDTO(chunk.content())))
                 .build()
-            );
+                );
     }
 
     private String writeJson(Object obj) {
