@@ -37,10 +37,10 @@ public class SettingsService {
 
     private Setting applyUpdate(Setting savedSetting, LlmProvider provider, Theme theme, Boolean think) {
         Setting updated = savedSetting;
-
-        updated.setProvider(provider);
-        updated.setTheme(theme);
-        updated.setThink(think);
+        
+        if (provider != null) updated.setProvider(provider);
+        if (theme != null) updated.setTheme(theme);
+        if (think != null) updated.setThink(think);
 
         return updated;
     }

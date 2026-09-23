@@ -29,7 +29,11 @@ public class SettingsController {
 
     @PostMapping("/save")
     public Mono<ResponseEntity<Void>> saveSettings(@RequestBody SaveSettingsRequestDTO request) {
-        return settingsService.saveSettings(LlmProvider.valueOf(request.provider()), Theme.valueOf(request.theme()), request.think()).then(Mono.just(ResponseEntity.ok().build()));
+        LlmProvider provider = (request.provider() == null) ? null : LlmProvider.valueOf(request.provider());
+        Theme theme = (request.theme() == null) ? null : Theme.valueOf(request.theme());
+        Boolean think = (request.think() == null) ? null : request.think();
+
+        return settingsService.saveSettings(provider, theme, think).then(Mono.just(ResponseEntity.ok().build()));
     
 
     }
