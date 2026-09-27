@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nsky.api.controller.dto.GetChatMessagesResponseDTO;
 import org.nsky.api.factory.LlmProviderFactory;
 import org.nsky.api.model.Message;
+import org.nsky.api.model.Setting;
 import org.nsky.api.provider.LlmProvider;
 import org.nsky.api.provider.impl.OllamaProvider;
 import org.nsky.api.repository.MessageRepository;
@@ -22,17 +23,20 @@ public class LlmService {
     private final ChatService chatService;
     private final LlmProviderFactory providerFactory;
     private final OllamaProvider ollamaProvider;
+    private final SettingsService settingsService;
 
     public LlmService(
         MessageRepository messageRepository,
         ChatService chatService,
         LlmProviderFactory providerFactory,
-        OllamaProvider ollamaProvider
+        OllamaProvider ollamaProvider,
+        SettingsService settingsService
     ) {
         this.chatService = chatService;
         this.messageRepository = messageRepository;
         this.providerFactory = providerFactory;
         this.ollamaProvider = ollamaProvider;
+        this.settingsService = settingsService;
     }
 
     public Flux<StreamResponseChunk> stream(String prompt, Long chatId, String providerKey) {
@@ -50,11 +54,13 @@ public class LlmService {
         userPrompt.setContent(prompt);
         userPrompt.setChatId(chatId);
 
+        Mono<Setting> setting = settingsService.getSettings();
 
         Flux<StreamResponseChunk> llmResponse = messageRepository.save(userPrompt)
             .thenMany(chatService.findAllMessagesForChat(chatId))
             .collectList()
-            .flatMapMany(provider::stream)
+            .zipWith(setting)
+            .flatMapMany(tuple -> provider.stream(tuple.getT1(), tuple.getT2().getThink()))
             .map(response -> {
                 String thinking = response.getResult().getMetadata().get("thinking");
 

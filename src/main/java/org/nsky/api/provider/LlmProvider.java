@@ -9,5 +9,5 @@ import reactor.core.publisher.Flux;
 
 public interface LlmProvider {
     String getProviderKey();
-    Flux<ChatResponse> stream(List<GetChatMessagesResponseDTO> messages);
+    Flux<ChatResponse> stream(List<GetChatMessagesResponseDTO> messages, Boolean think);
 }

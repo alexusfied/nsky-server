@@ -1,5 +1,7 @@
 package org.nsky.api.service;
 
+import java.nio.channels.SeekableByteChannel;
+
 import org.nsky.api.controller.dto.GetSettingsResponseDTO;
 import org.nsky.api.enums.LlmProvider;
 import org.nsky.api.enums.Theme;
@@ -17,8 +19,8 @@ import reactor.core.publisher.Mono;
 public class SettingsService {
     private final SettingsRepository settingsRepository; 
 
-    public Mono<GetSettingsResponseDTO> getSettings() {
-        Mono<Setting> setting = settingsRepository.findById(1L);
+    public Mono<GetSettingsResponseDTO> getSettingsDto() {
+        Mono<Setting> setting = this.getSettings();
 
         return setting.map(savedSetting -> 
                 new GetSettingsResponseDTO(
@@ -27,6 +29,10 @@ public class SettingsService {
                     savedSetting.getThink()
                 )
         );
+    }
+
+    public Mono<Setting> getSettings() {
+        return settingsRepository.findById(1L);
     }
 
     public Mono<Setting> saveSettings(LlmProvider provider, Theme theme, Boolean think) {

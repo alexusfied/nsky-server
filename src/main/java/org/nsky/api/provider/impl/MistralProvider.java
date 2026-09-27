@@ -42,7 +42,7 @@ public class MistralProvider implements LlmProvider {
     }
 
     @Override
-    public Flux<ChatResponse> stream(List<GetChatMessagesResponseDTO> messages) {
+    public Flux<ChatResponse> stream(List<GetChatMessagesResponseDTO> messages, Boolean think) {
         List<Message> msg = messages.stream().<Message>map(message -> {
             return message.author().equals("assistant")
                 ? new AssistantMessage(message.content())

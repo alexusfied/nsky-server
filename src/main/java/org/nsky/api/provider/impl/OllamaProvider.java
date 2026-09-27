@@ -12,6 +12,8 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
+import org.springframework.ai.ollama.api.ThinkOption;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -40,7 +42,7 @@ public class OllamaProvider implements LlmProvider {
     }
 
     @Override
-    public Flux<ChatResponse> stream(List<GetChatMessagesResponseDTO> messages) {
+    public Flux<ChatResponse> stream(List<GetChatMessagesResponseDTO> messages, Boolean think) {
         List<Message> msg = messages.stream().<Message>map(message -> {
             return message.author().equals("assistant")
                 ? new AssistantMessage(message.content())
@@ -50,6 +52,8 @@ public class OllamaProvider implements LlmProvider {
         return chatClient
             .prompt(new Prompt(msg))
             .tools(List.of(searchService, dateTimeService))
+            .options(OllamaChatOptions.builder()
+                .thinkOption(think ? ThinkOption.ThinkBoolean.ENABLED : ThinkOption.ThinkBoolean.DISABLED))
             .stream()
             .chatResponse();
     }

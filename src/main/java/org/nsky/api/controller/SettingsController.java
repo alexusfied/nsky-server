@@ -24,7 +24,7 @@ public class SettingsController {
 
     @GetMapping("")
     public Mono<GetSettingsResponseDTO> getSettings() {
-        return settingsService.getSettings();
+        return settingsService.getSettingsDto();
     }
 
     @PostMapping("/save")
