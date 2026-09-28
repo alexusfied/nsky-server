@@ -44,6 +44,15 @@ public class ChatController {
             ));
     }
 
+    @DeleteMapping("/delete")
+    public Mono<ResponseEntity<Void>> deleteChats(@RequestBody DeleteChatsRequestDTO request) {
+        return chatService
+            .deleteChats(request.chatIds())
+            .then(Mono.just(
+                ResponseEntity.ok().build()
+            ));
+    }
+
     @PatchMapping("/{id}/rename")
     public Mono<ResponseEntity<Void>> renameChat(
         @PathVariable Long id,

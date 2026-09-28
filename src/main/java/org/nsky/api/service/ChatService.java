@@ -2,6 +2,9 @@ package org.nsky.api.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+
 import org.nsky.api.controller.dto.GetChatMessagesResponseDTO;
 import org.nsky.api.controller.dto.GetChatResponseDTO;
 import org.nsky.api.model.Chat;
@@ -42,6 +45,10 @@ public class ChatService {
 
     public Mono<Void> deleteChat(Long id) {
         return chatRepository.deleteById(id);
+    }
+
+    public Mono<Void> deleteChats(List<Long> chatIds) {
+        return chatRepository.deleteAllById(chatIds);
     }
 
     public Mono<Void> renameChat(Long id, String updatedName) {
