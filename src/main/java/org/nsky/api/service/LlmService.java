@@ -10,6 +10,8 @@ import org.nsky.api.provider.impl.OllamaProvider;
 import org.nsky.api.repository.MessageRepository;
 import org.nsky.api.service.dto.StreamResponseChunk;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.mistralai.MistralAiChatModel;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -62,9 +64,11 @@ public class LlmService {
             .zipWith(setting)
             .flatMapMany(tuple -> provider.stream(tuple.getT1(), tuple.getT2().getThink()))
             .map(response -> {
-                String thinking = response.getResult().getMetadata().get("thinking");
+                AssistantMessage msg = response.getResult().getOutput();
+                Object t = msg.getMetadata().get(MistralAiChatModel.THINKING_CONTENT_METADATA);
+                String thinkingDelta = (t instanceof String s) ? s : null;
 
-                if (thinking != null && !thinking.isEmpty()) return new StreamResponseChunk("think", thinking);
+                if (thinkingDelta != null && !thinkingDelta.isEmpty()) return new StreamResponseChunk("think", thinkingDelta);
 
                 return new StreamResponseChunk("token", response.getResult().getOutput().getText());
             })
