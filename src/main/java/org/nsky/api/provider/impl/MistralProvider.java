@@ -51,7 +51,8 @@ public class MistralProvider implements LlmProvider {
 
         return chatClient
             .prompt(new Prompt(msg))
-            .tools(List.of(searchService, dateTimeService))
+            // TODO: Tool calls disabled at the moment -> need to check if they work with Mistral
+            //.tools(List.of(searchService, dateTimeService))
             .stream()
             .chatResponse();
     }
